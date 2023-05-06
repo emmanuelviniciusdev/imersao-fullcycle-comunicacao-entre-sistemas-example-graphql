@@ -50,6 +50,12 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  Category:
+    model:
+      - imsersao-fullcycle-comunicacao-entre-sistemas-example-graphql/graph/model.Category
+  Course:
+    model:
+      - imsersao-fullcycle-comunicacao-entre-sistemas-example-graphql/graph/model.Course
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

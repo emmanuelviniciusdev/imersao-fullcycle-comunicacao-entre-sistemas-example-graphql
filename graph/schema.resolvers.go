@@ -6,9 +6,45 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"imsersao-fullcycle-comunicacao-entre-sistemas-example-graphql/graph/model"
 )
+
+// Courses is the resolver for the courses field.
+func (r *categoryResolver) Courses(ctx context.Context, obj *model.Category) ([]*model.Course, error) {
+	courses, err := r.CourseDB.FindByCategoryID(obj.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var courseModels []*model.Course
+
+	for _, course := range courses {
+		// TODO: Inject Category
+		courseModels = append(courseModels, &model.Course{
+			ID:          course.ID,
+			Name:        course.Name,
+			Description: &course.Description,
+		})
+	}
+
+	return courseModels, nil
+}
+
+// Category is the resolver for the category field.
+func (r *courseResolver) Category(ctx context.Context, obj *model.Course) (*model.Category, error) {
+	category, err := r.CategoryDB.FindByCourseID(obj.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Category{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: &category.Description,
+	}, nil
+}
 
 // CreateCategory is the resolver for the createCategory field.
 func (r *mutationResolver) CreateCategory(ctx context.Context, input model.NewCategory) (*model.Category, error) {
@@ -19,15 +55,22 @@ func (r *mutationResolver) CreateCategory(ctx context.Context, input model.NewCa
 	}
 
 	return &model.Category{
-		ID: category.ID, 
-		Name: category.Name, 
+		ID:          category.ID,
+		Name:        category.Name,
 		Description: &category.Description,
 	}, nil
 }
 
 // CreateCourse is the resolver for the createCourse field.
 func (r *mutationResolver) CreateCourse(ctx context.Context, input model.NewCourse) (*model.Course, error) {
-	panic(fmt.Errorf("not implemented: CreateCourse - createCourse"))
+	course, err := r.CourseDB.Create(input.Name, *input.Description, input.CategoryID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Inject Category
+	return &model.Course{ID: course.ID, Name: course.Name, Description: &course.Description}, nil
 }
 
 // Categories is the resolver for the categories field.
@@ -42,8 +85,8 @@ func (r *queryResolver) Categories(ctx context.Context) ([]*model.Category, erro
 
 	for _, category := range categories {
 		categoryModels = append(categoryModels, &model.Category{
-			ID: category.ID, 
-			Name: category.Name, 
+			ID:          category.ID,
+			Name:        category.Name,
 			Description: &category.Description,
 		})
 	}
@@ -53,8 +96,31 @@ func (r *queryResolver) Categories(ctx context.Context) ([]*model.Category, erro
 
 // Courses is the resolver for the courses field.
 func (r *queryResolver) Courses(ctx context.Context) ([]*model.Course, error) {
-	panic(fmt.Errorf("not implemented: Courses - courses"))
+	courses, err := r.CourseDB.FindAll()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var courseModels []*model.Course
+
+	for _, course := range courses {
+		// TODO: Inject Category
+		courseModels = append(courseModels, &model.Course{
+			ID:          course.ID,
+			Name:        course.Name,
+			Description: &course.Description,
+		})
+	}
+
+	return courseModels, nil
 }
+
+// Category returns CategoryResolver implementation.
+func (r *Resolver) Category() CategoryResolver { return &categoryResolver{r} }
+
+// Course returns CourseResolver implementation.
+func (r *Resolver) Course() CourseResolver { return &courseResolver{r} }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -62,5 +128,7 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type categoryResolver struct{ *Resolver }
+type courseResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

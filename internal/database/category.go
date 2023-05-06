@@ -2,19 +2,43 @@ package database
 
 import (
 	"database/sql"
-
 	"github.com/google/uuid"
 )
 
 type Category struct {
-	db *sql.DB
-	ID string
-	Name string
+	db          *sql.DB
+	ID          string
+	Name        string
 	Description string
 }
 
 func NewCategory(db *sql.DB) *Category {
 	return &Category{db: db}
+}
+
+func (c *Category) FindByCourseID(courseID string) (*Category, error) {
+	dbRows, err := c.db.Query(
+		"SELECT ca.id, ca.name, ca.description FROM categories ca "+
+			"JOIN courses co ON co.category_id = ca.id "+
+			"WHERE co.id = $1", courseID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer dbRows.Close()
+
+	for dbRows.Next() {
+		var id, name, description string
+
+		if err := dbRows.Scan(&id, &name, &description); err != nil {
+			return nil, err
+		}
+
+		return &Category{ID: id, Name: name, Description: description}, nil
+	}
+
+	return nil, nil
 }
 
 func (c *Category) FindAll() ([]Category, error) {
@@ -45,7 +69,7 @@ func (c *Category) Create(name string, description string) (*Category, error) {
 	id := uuid.New().String()
 
 	_, err := c.db.Exec(
-		"INSERT INTO categories (id, name, description) VALUES ($1, $2, $3)", 
+		"INSERT INTO categories (id, name, description) VALUES ($1, $2, $3)",
 		id, name, description)
 
 	if err != nil {

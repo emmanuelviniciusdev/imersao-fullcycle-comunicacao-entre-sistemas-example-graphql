@@ -6,6 +6,7 @@ import "imsersao-fullcycle-comunicacao-entre-sistemas-example-graphql/internal/d
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{
+type Resolver struct {
 	CategoryDB *database.Category
+	CourseDB   *database.Course
 }

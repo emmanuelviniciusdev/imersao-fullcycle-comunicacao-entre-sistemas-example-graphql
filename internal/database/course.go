@@ -7,15 +7,40 @@ import (
 )
 
 type Course struct {
-	db *sql.DB
-	ID string
-	Name string
+	db          *sql.DB
+	ID          string
+	Name        string
 	Description string
-	CategoryID string
+	CategoryID  string
 }
 
 func NewCourse(db *sql.DB) *Course {
 	return &Course{db: db}
+}
+
+func (c *Course) FindByCategoryID(categoryID string) ([]Course, error) {
+	dbRows, err := c.db.Query(
+		"SELECT id, name, description, category_id FROM courses WHERE category_id = $1", categoryID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer dbRows.Close()
+
+	courses := []Course{}
+
+	for dbRows.Next() {
+		var id, name, description, categoryId string
+
+		if err := dbRows.Scan(&id, &name, &description, &categoryId); err != nil {
+			return nil, err
+		}
+
+		courses = append(courses, Course{ID: id, Name: name, Description: description, CategoryID: categoryId})
+	}
+
+	return courses, nil
 }
 
 func (c *Course) FindAll() ([]Course, error) {
@@ -46,7 +71,7 @@ func (c *Course) Create(name string, description string, categoryID string) (*Co
 	id := uuid.New().String()
 
 	_, err := c.db.Exec(
-		"INSERT INTO courses (id, name, description, category_id) VALUES ($1, $2, $3, $4)", 
+		"INSERT INTO courses (id, name, description, category_id) VALUES ($1, $2, $3, $4)",
 		id, name, description, categoryID)
 
 	if err != nil {
